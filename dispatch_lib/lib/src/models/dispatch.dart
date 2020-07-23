@@ -18,26 +18,31 @@ class Dispatch {
   final String dispatchReciever;
   final String dispatchRecieverPhone;
   final String dispatchDescription;
+  final double destinationLatitude;
+  final double destinationLongitude;
+  final String paymentOption;
 
-  Dispatch({
-    @required this.id,
-    @required this.userId,
-    @required this.trackingNo,
-    @required this.dispatchRiderId,
-    @required this.dispatchDate,
-    @required this.pickUpLocation,
-    @required this.dispatchDestination,
-    @required this.dispatchBaseFare,
-    @required this.dispatchTotalFare,
-    @required this.dispatchType,
-    @required this.dispatchStatus,
-    @required this.currentLocation,
-    @required this.estimatedDIspatchDuration,
-    @required this.estimatedDistance,
-    @required this.dispatchReciever,
-    @required this.dispatchRecieverPhone,
-    @required this.dispatchDescription,
-  });
+  Dispatch(
+      {@required this.id,
+      @required this.userId,
+      @required this.trackingNo,
+      @required this.dispatchRiderId,
+      @required this.dispatchDate,
+      @required this.pickUpLocation,
+      @required this.dispatchDestination,
+      @required this.dispatchBaseFare,
+      @required this.dispatchTotalFare,
+      @required this.dispatchType,
+      @required this.dispatchStatus,
+      @required this.currentLocation,
+      @required this.estimatedDIspatchDuration,
+      @required this.estimatedDistance,
+      @required this.dispatchReciever,
+      @required this.dispatchRecieverPhone,
+      @required this.dispatchDescription,
+      @required this.destinationLatitude,
+      @required this.destinationLongitude,
+      @required this.paymentOption});
 
   static List<Dispatch> dispatchtListFromJson(List collection) {
     List<Dispatch> dispatchlist =
@@ -62,5 +67,8 @@ class Dispatch {
         estimatedDistance = json['estimatedDistance'],
         dispatchReciever = json['dispatchReciever'],
         dispatchDescription = json['dispatchDescription'],
-        dispatchRecieverPhone = json['dispatchRecieverPhone'];
+        dispatchRecieverPhone = json['dispatchRecieverPhone'],
+        destinationLatitude = json['destinationLatitude'],
+        destinationLongitude = json['destinationLongitude'],
+        paymentOption = json['paymentOption'];
 }

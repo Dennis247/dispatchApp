@@ -111,3 +111,39 @@ class AppRectButtonWidget extends StatelessWidget {
     );
   }
 }
+
+class AppRectButtonLightWidget extends StatelessWidget {
+  final String buttonText;
+  final Function function;
+  final Color color;
+  final double width;
+
+  const AppRectButtonLightWidget(
+      {Key key, this.buttonText, this.function, this.color, this.width})
+      : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    final appSzie = GlobalWidgets.getAppSize(context);
+    return GestureDetector(
+      onTap: function,
+      child: Container(
+        alignment: Alignment.center,
+        child: Text(
+          buttonText,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            color: Constants.primaryColorDark,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        width: width == null ? appSzie.width * 0.5 : width,
+        height: 48.0,
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(5.0),
+            color: color == null ? Constants.primaryColorDark : color,
+            border: Border.all(color: Constants.primaryColorDark)),
+      ),
+    );
+  }
+}

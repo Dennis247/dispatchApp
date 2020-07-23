@@ -4,6 +4,7 @@ import 'package:dispatch_lib/src/models/PlaceDistanceTime.dart';
 import 'package:dispatch_lib/src/models/constants.dart';
 import 'package:dispatch_lib/src/models/dispatch.dart';
 import 'package:dispatch_lib/src/models/notification.dart';
+import 'package:dispatch_lib/src/models/placeDetail.dart';
 import 'package:dispatch_lib/src/models/response.dart';
 import 'package:dispatch_lib/src/providers/authProvider.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -24,6 +25,7 @@ String dispatchDescription;
 class DispatchProvider with ChangeNotifier {
   Uuid uuid = Uuid();
   Future<ResponseModel> getDispatchList() async {
+    ResponseModel responseModel;
     dispatchList = dispatchList == null ? [] : dispatchList;
     List<Dispatch> alldispatch = [];
     try {
@@ -34,35 +36,45 @@ class DispatchProvider with ChangeNotifier {
           .once()
           .then((DataSnapshot dataSnapshot) {
         Map<dynamic, dynamic> dbDispatchLIst = dataSnapshot.value;
-        dbDispatchLIst.forEach((key, value) {
-          final dispatch = Dispatch(
-              id: value['id'],
-              userId: value['userId'],
-              trackingNo: value['trackingNo'],
-              dispatchRiderId: value['dispatchRiderId'],
-              dispatchDate: DateTime.parse(value['dispatchDate']),
-              pickUpLocation: value['pickUpLocation'],
-              dispatchDestination: value['dispatchDestination'],
-              dispatchBaseFare:
-                  double.parse(value['dispatchBaseFare'].toString()),
-              dispatchTotalFare:
-                  double.parse(value['dispatchTotalFare'].toString()),
-              dispatchType: value['dispatchType'],
-              dispatchStatus: value['dispatchStatus'],
-              currentLocation: value['currentLocation'],
-              estimatedDIspatchDuration: value['estimatedDIspatchDuration'],
-              estimatedDistance: value['estimatedDistance'],
-              dispatchReciever: value['dispatchReciever'],
-              dispatchRecieverPhone: value['dispatchRecieverPhone'],
-              dispatchDescription: value['dispatchDescription']);
-          alldispatch.add(dispatch);
-        });
+        if (dbDispatchLIst != null) {
+          dbDispatchLIst.forEach((key, value) {
+            final dispatch = Dispatch(
+                id: value['id'],
+                userId: value['userId'],
+                trackingNo: value['trackingNo'],
+                dispatchRiderId: value['dispatchRiderId'],
+                dispatchDate: DateTime.parse(value['dispatchDate']),
+                pickUpLocation: value['pickUpLocation'],
+                dispatchDestination: value['dispatchDestination'],
+                dispatchBaseFare:
+                    double.parse(value['dispatchBaseFare'].toString()),
+                dispatchTotalFare:
+                    double.parse(value['dispatchTotalFare'].toString()),
+                dispatchType: value['dispatchType'],
+                dispatchStatus: value['dispatchStatus'],
+                currentLocation: value['currentLocation'],
+                estimatedDIspatchDuration: value['estimatedDIspatchDuration'],
+                estimatedDistance: value['estimatedDistance'],
+                dispatchReciever: value['dispatchReciever'],
+                dispatchRecieverPhone: value['dispatchRecieverPhone'],
+                dispatchDescription: value['dispatchDescription'],
+                destinationLatitude: value['destinationLatitude'],
+                destinationLongitude: value['destinationLongitude'],
+                paymentOption: value['paymentOption']);
+            alldispatch.add(dispatch);
+          });
+          dispatchList = alldispatch;
+          dispatchList.sort((b, a) => a.dispatchDate.compareTo(b.dispatchDate));
+          responseModel =
+              ResponseModel(true, "Disatch list gotten sucessfully");
+        } else {
+          responseModel = ResponseModel(true, "Disatch list is empty");
+        }
       });
-      dispatchList = alldispatch;
-      dispatchList.sort((b, a) => a.dispatchDate.compareTo(b.dispatchDate));
-      return ResponseModel(true, "Disatch list gotten sucessfully");
+      return responseModel;
     } catch (e) {
-      return ResponseModel(false, e.toString());
+      responseModel = ResponseModel(false, e.toString());
+      return responseModel;
     }
   }
 
@@ -112,7 +124,10 @@ class DispatchProvider with ChangeNotifier {
         "dispatchTotalFare": dispatch.dispatchTotalFare,
         "dispatchReciever": dispatch.dispatchReciever,
         "dispatchRecieverPhone": dispatch.dispatchRecieverPhone,
-        "dispatchDescription": dispatch.dispatchDescription
+        "dispatchDescription": dispatch.dispatchDescription,
+        "destinationLatitude": dispatch.destinationLatitude,
+        "destinationLongitude": dispatch.destinationLongitude,
+        "paymentOption": dispatch.paymentOption
       });
       dispatchList.add(dispatch);
       await createPendingDispatchNotification(dispatch);
@@ -122,8 +137,13 @@ class DispatchProvider with ChangeNotifier {
     }
   }
 
-  Future<ResponseModel> createDispatch(String dispatchType,
-      String pickUpLocation, String dispatchDestination, String token) async {
+  Future<ResponseModel> createDispatch(
+      String dispatchType,
+      String pickUpLocation,
+      String dispatchDestination,
+      String token,
+      PlaceDetail endPlaceDetail,
+      String paymentOption) async {
     try {
       final placeDistanceTime = await getPlaceDistanceTimeWithAddress(
           pickUpLocation, dispatchDestination, token);
@@ -144,7 +164,10 @@ class DispatchProvider with ChangeNotifier {
           dispatchTotalFare: 5000,
           dispatchReciever: recieverName,
           dispatchRecieverPhone: recieverPhone,
-          dispatchDescription: dispatchDescription);
+          dispatchDescription: dispatchDescription,
+          destinationLatitude: endPlaceDetail.lat,
+          destinationLongitude: endPlaceDetail.lng,
+          paymentOption: paymentOption);
       currentDispatch = dispatch;
       return ResponseModel(true, "dispatch created sucessfully");
     } catch (e) {
@@ -263,7 +286,10 @@ class DispatchProvider with ChangeNotifier {
             estimatedDistance: value['estimatedDistance'],
             dispatchReciever: value['dispatchReciever'],
             dispatchRecieverPhone: value['dispatchRecieverPhone'],
-            dispatchDescription: value['dispatchDescription']);
+            dispatchDescription: value['dispatchDescription'],
+            destinationLatitude: value['destinationLatitude'],
+            destinationLongitude: value['destinationLongitude'],
+            paymentOption: value['paymentOption']);
       });
       responseModel = Tuple2<ResponseModel, Dispatch>(
           ResponseModel(true, "dispatch Fetched Sucessfull"), dispatch);
@@ -296,7 +322,10 @@ class DispatchProvider with ChangeNotifier {
           estimatedDistance: value['estimatedDistance'],
           dispatchReciever: value['dispatchReciever'],
           dispatchRecieverPhone: value['dispatchRecieverPhone'],
-          dispatchDescription: value['dispatchDescription']);
+          dispatchDescription: value['dispatchDescription'],
+          destinationLatitude: value['destinationLatitude'],
+          destinationLongitude: value['destinationLongitude'],
+          paymentOption: value['paymentOption']);
       alldispatch.add(dispatch);
     });
     return alldispatch.reversed.toList();

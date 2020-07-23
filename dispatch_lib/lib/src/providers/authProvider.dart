@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dispatch_lib/dispatch_lib.dart';
 import 'package:dispatch_lib/src/models/constants.dart';
 import 'package:dispatch_lib/src/models/dispatch.dart';
 import 'package:dispatch_lib/src/models/response.dart';
@@ -48,6 +49,8 @@ class AUthProvider with ChangeNotifier {
         "userType": loggedInUser.userType,
         "token": token
       });
+      //get app settings
+      locator<SettingsServices>().getAppSettings();
       storeAutoData(loggedInUser);
       storeAppOnBoardingData(loggedInUser.id);
       return ResponseModel(true, "User SignIn Sucessfull");
@@ -80,7 +83,10 @@ class AUthProvider with ChangeNotifier {
           user.password,
           user.userType,
           user.token);
+      locator<SettingsServices>().saveAppSettings(
+          new Settings(countryAbbrevation: "ng", isDemoMode: true));
       storeAutoData(autoLoggedUser);
+      //store
       storeAppOnBoardingData(loggedInUser.id);
       return ResponseModel(true, "User SignUp Sucessfull");
     } catch (e) {
@@ -107,14 +113,17 @@ class AUthProvider with ChangeNotifier {
     try {
       await riderRef.child(riderId).once().then((DataSnapshot dataSnapshot) {
         final value = dataSnapshot.value as Map<dynamic, dynamic>;
+
         rider = new Rider(
-            value['id'],
-            value['fullname'],
-            value['phoneNumber'],
-            value['email'],
-            value['password'],
-            value['hasActiveDispatch'],
-            value['token']);
+            id: value['id'],
+            fullName: value['fullName'],
+            phoneNumber: value['phoneNumber'],
+            email: value['email'],
+            password: value['password'],
+            hasActiveDispatch: value['hasActiveDispatch'],
+            token: value['token'],
+            latitude: value['latitude'],
+            longitude: value['longitude']);
       });
 
       await dispatchRef
@@ -141,7 +150,10 @@ class AUthProvider with ChangeNotifier {
             estimatedDistance: value['estimatedDistance'],
             dispatchReciever: value['dispatchReciever'],
             dispatchRecieverPhone: value['dispatchRecieverPhone'],
-            dispatchDescription: value['dispatchDescription']);
+            dispatchDescription: value['dispatchDescription'],
+            destinationLatitude: value['destinationLatitude'],
+            destinationLongitude: value['destinationLongitude'],
+            paymentOption: value['paymentOption']);
       });
 
       responseModel = Tuple3<ResponseModel, Rider, Dispatch>(
@@ -229,6 +241,7 @@ class AUthProvider with ChangeNotifier {
     if (!sharedPref.containsKey(Constants.autoLogOnData)) {
       return false;
     }
+    locator<SettingsServices>().getAppSettings();
     final sharedData = sharedPref.getString(Constants.autoLogOnData);
     final logOnData = json.decode(sharedData) as Map<String, Object>;
     //gdt latest token
@@ -263,14 +276,16 @@ class AUthProvider with ChangeNotifier {
       riderRef
           .child(loggedInRider.id)
           .update({'fullname': fullname, 'phoneNumber': phoneNumber});
-      loggedInRider = Rider(
-          loggedInRider.id,
-          fullname,
-          phoneNumber,
-          loggedInRider.email,
-          loggedInRider.password,
-          loggedInRider.hasActiveDispatch,
-          loggedInRider.token);
+      loggedInRider = new Rider(
+          id: loggedInRider.id,
+          fullName: fullname,
+          phoneNumber: phoneNumber,
+          email: loggedInRider.email,
+          password: loggedInRider.password,
+          hasActiveDispatch: loggedInRider.hasActiveDispatch,
+          token: loggedInRider.token,
+          latitude: loggedInRider.latitude,
+          longitude: loggedInRider.longitude);
       return ResponseModel(true, "Rider Profile Updated Sucessfully");
     } catch (e) {
       return ResponseModel(false, e.toString());
@@ -284,20 +299,25 @@ class AUthProvider with ChangeNotifier {
       final dataSnapShot = await riderRef.child(authResult.user.uid).once();
       FirebaseMessaging messaging = FirebaseMessaging();
       final token = await messaging.getToken();
-      loggedInRider = Rider(
-          dataSnapShot.value['id'],
-          dataSnapShot.value['fullname'],
-          dataSnapShot.value['phoneNumber'],
-          dataSnapShot.value['email'],
-          password,
-          dataSnapShot.value['hasActiveDispatch'],
-          token);
+      loggedInRider = new Rider(
+          id: dataSnapShot.value['id'],
+          fullName: dataSnapShot.value['fullName'],
+          phoneNumber: dataSnapShot.value['phoneNumber'],
+          email: dataSnapShot.value['email'],
+          password: dataSnapShot.value['password'],
+          hasActiveDispatch: dataSnapShot.value['hasActiveDispatch'],
+          token: dataSnapShot.value['token'],
+          latitude: dataSnapShot.value['latitude'],
+          longitude: dataSnapShot.value['longitude']);
+
       await riderRef.child(authResult.user.uid).set({
         "id": authResult.user.uid,
         "email": loggedInRider.email,
         "fullname": loggedInRider.fullName,
         "phoneNumber": loggedInRider.phoneNumber,
-        "token": token
+        "token": token,
+        "latitude": loggedInRider.latitude,
+        "longitude": loggedInRider.longitude
       });
       storeAutoRiderData(loggedInRider);
       storeAppOnBoardingData(loggedInRider.id);
@@ -320,10 +340,21 @@ class AUthProvider with ChangeNotifier {
         "email": rider.email,
         "fullname": rider.fullName,
         "phoneNumber": rider.phoneNumber,
-        "token": token
+        "token": token,
+        "latitude": rider.latitude,
+        "longitude": rider.longitude
       });
-      loggedInRider = new Rider(authResult.user.uid, rider.fullName,
-          rider.phoneNumber, rider.email, rider.password, false, token);
+      loggedInRider = new Rider(
+          id: authResult.user.uid,
+          fullName: rider.fullName,
+          phoneNumber: rider.phoneNumber,
+          email: rider.email,
+          password: rider.password,
+          hasActiveDispatch: rider.hasActiveDispatch,
+          token: rider.token,
+          latitude: rider.latitude,
+          longitude: rider.longitude);
+
       storeAutoRiderData(loggedInRider);
       storeAppOnBoardingData(loggedInRider.id);
       return ResponseModel(true, "Rider SignUp Sucessfull");
@@ -343,15 +374,47 @@ class AUthProvider with ChangeNotifier {
     FirebaseMessaging messaging = FirebaseMessaging();
     final token = await messaging.getToken();
     loggedInRider = new Rider(
-        logOnData['id'],
-        logOnData['fullName'],
-        logOnData['phoneNumber'],
-        logOnData['email'],
-        logOnData['password'],
-        logOnData['hasActiveDispatch'],
-        token);
+      id: logOnData['id'],
+      fullName: logOnData['fullName'],
+      phoneNumber: logOnData['phoneNumber'],
+      email: logOnData['email'],
+      password: logOnData['password'],
+      hasActiveDispatch: logOnData['hasActiveDispatch'],
+      token: token,
+      latitude: logOnData['latitude'],
+      longitude: logOnData['longitude'],
+    );
+
     isLoggedIn = true;
     notifyListeners();
     return true;
+  }
+
+  Future<Tuple2<ResponseModel, Rider>> getRider(String riderId) async {
+    Rider rider;
+    Tuple2<ResponseModel, Rider> response;
+    //  Tuple2<ResponseModel, Rider>>
+    try {
+      await riderRef.child(riderId).once().then((DataSnapshot dataSnapshot) {
+        final value = dataSnapshot.value as Map<dynamic, dynamic>;
+
+        rider = new Rider(
+            id: value['id'],
+            fullName: value['fullName'],
+            phoneNumber: value['phoneNumber'],
+            email: value['email'],
+            password: value['password'],
+            hasActiveDispatch: value['hasActiveDispatch'],
+            token: value['token'],
+            latitude: value['latitude'],
+            longitude: value['longitude']);
+      });
+      response = new Tuple2(
+          new ResponseModel(true, "Rider fetched SUcessfull"), rider);
+    } catch (e) {
+      response =
+          new Tuple2(new ResponseModel(true, "Rider fetched Failed"), null);
+    }
+    return response;
   }
 }

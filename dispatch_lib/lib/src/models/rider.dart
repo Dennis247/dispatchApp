@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Rider {
   final String id;
   final String fullName;
@@ -6,9 +8,19 @@ class Rider {
   final String password;
   final bool hasActiveDispatch;
   final String token;
+  final double latitude;
+  final double longitude;
 
-  Rider(this.id, this.fullName, this.phoneNumber, this.email, this.password,
-      this.hasActiveDispatch, this.token);
+  Rider(
+      {@required this.id,
+      @required this.fullName,
+      @required this.phoneNumber,
+      @required this.email,
+      @required this.password,
+      @required this.hasActiveDispatch,
+      @required this.token,
+      @required this.latitude,
+      @required this.longitude});
 
   static List<Rider> ridertListFromJson(List collection) {
     List<Rider> riderlist =
@@ -23,5 +35,7 @@ class Rider {
         email = json['email'],
         hasActiveDispatch = json['hasActiveDispatch'],
         password = '*************',
-        token = json['token'];
+        token = json['token'],
+        latitude = json['latitude'],
+        longitude = json['longitude'];
 }

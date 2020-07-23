@@ -29,7 +29,11 @@ dependencies:
   flutter_local_notifications: ^1.4.4+1
   introduction_screen: ^1.0.8
   firebase_messaging:
-  tuple: ^1.0.3    
+  tuple: ^1.0.3 
+  background_location:   
+  rave_flutter:
+  get_it:
+  # cached_network_image:
 
 
 dev_dependencies:

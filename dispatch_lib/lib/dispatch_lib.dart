@@ -10,12 +10,21 @@ export 'src/models/dispatch.dart';
 export 'src/models/rider.dart';
 export 'src/models/pickUpDetails.dart';
 export 'src/models/constants.dart';
+export 'src/models/onlinePayment.dart';
+export 'src/models/settings.dart';
 
 //export the providers
 export 'src/providers/authProvider.dart';
 export 'src/providers/dispatchProvider.dart';
 export 'src/providers/googleMpaProvider.dart';
 export 'src/providers/notificatiomProvider.dart';
+export 'src/providers/locationProvider.dart';
+export 'src/providers/paymentProvider.dart';
+export 'src/providers/settingsProvider.dart';
+
+//export the Services
+export 'src/services/settingsServices.dart';
+export 'src/services/googleMapServices.dart';
 
 //export the widgets
 export 'src/widgets/appButtonWidget.dart';
